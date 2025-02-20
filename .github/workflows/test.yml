@@ -1,0 +1,46 @@
+name: Test Static Web App
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+
+      # Vérifier la syntaxe HTML avec `htmlhint`
+      - name: Install HTMLHint
+        run: npm install -g htmlhint
+      - name: Run HTMLHint
+        run: htmlhint ./**/*.html
+
+      # Vérifier la syntaxe CSS avec `stylelint`
+      - name: Install StyleLint
+        run: npm install -g stylelint stylelint-config-standard
+      - name: Run StyleLint
+        run: stylelint "**/*.css"
+
+      # Vérifier la syntaxe JavaScript avec `eslint`
+      - name: Install ESLint
+        run: npm install -g eslint
+      - name: Run ESLint
+        run: eslint js/*.js
+
+      # Vérifier la performance et accessibilité avec Lighthouse
+      - name: Install Lighthouse CLI
+        run: npm install -g lighthouse
+      - name: Run Lighthouse Audit
+        run: lighthouse http://127.0.0.1:8080 --output=json --output-path=report.json || true
