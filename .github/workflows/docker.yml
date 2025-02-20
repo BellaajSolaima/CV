@@ -44,4 +44,3 @@ jobs:
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/profile-web:latest
             ghcr.io/bellaajsolaima/profile-web:latest
-            
