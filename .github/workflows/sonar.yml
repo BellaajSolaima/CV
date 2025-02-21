@@ -18,7 +18,7 @@ jobs:
 
       - name: Run Tests
         run: npm test || echo "Tests skipped"
-        
+
       - name: Check if SonarQube Scanner is installed
         run: |
           which sonarqube-scanner || echo "SonarQube Scanner not found"
@@ -54,7 +54,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         run: |
-          sonarqube-scanner -X \
+          npx sonar-scanner -X \
             -Dsonar.projectKey=profile-web \
             -Dsonar.sources=. \
             -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
