@@ -18,6 +18,11 @@ jobs:
 
       - name: Run Tests
         run: npm test || echo "Tests skipped"
+        
+      - name: Check if SonarQube Scanner is installed
+        run: |
+          which sonarqube-scanner || echo "SonarQube Scanner not found"
+          ls -lah $(npm root -g) || echo "NPM global packages not found"
       
       - name: Stop and remove existing SonarQube container (if exists)
         run: docker rm -f sonarqube || true
