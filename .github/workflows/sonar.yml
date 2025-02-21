@@ -16,35 +16,29 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      
-
-      
-
       - name: Run Tests
         run: npm test || echo "Tests skipped"
       
-      - name: Start SonarQube with Docker
-        run: |
-          docker run -d --name sonarqube -p 9000:9000 -e SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true sonarqube:lts
-          sleep 60  # Augmenter le temps d'attente
-
-        
+      - name: Stop and remove existing SonarQube container (if exists)
+        run: docker rm -f sonarqube || true
 
       - name: Start SonarQube with Docker
         run: |
           docker run -d --name sonarqube -p 9000:9000 -e SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true sonarqube:lts
-          sleep 30  # Attendre que SonarQube démarre
+          echo "Waiting for SonarQube to be ready..."
+          until curl -s -o /dev/null -w "%{http_code}" http://localhost:9000 | grep 200; do 
+            echo "Waiting..."
+            sleep 5
+          done
+          echo "SonarQube is ready!"
 
       - name: Run SonarQube Analysis
         env:
-            SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-            SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         run: |
-         npx sonar-scanner -X \
-              -Dsonar.projectKey=profile-web \
-              -Dsonar.sources=. \
-              -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
-              -Dsonar.login=${{ secrets.SONAR_TOKEN }}
-            
-        
-            
+          npx sonar-scanner -X \
+            -Dsonar.projectKey=profile-web \
+            -Dsonar.sources=. \
+            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
+            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
