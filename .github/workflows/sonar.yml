@@ -13,6 +13,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Debug Secrets
+        run: |
+         if [[ -z "${{ secrets.SONAR_TOKEN }}" ]]; then
+          echo "❌ SONAR_TOKEN is not set in GitHub Secrets!"
+          exit 1
+          else
+          echo "✅ SONAR_TOKEN is set."
+          fi
+
       - name: Checkout Repository
         uses: actions/checkout@v4
 
