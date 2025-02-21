@@ -22,6 +22,15 @@ jobs:
       - name: Stop and remove existing SonarQube container (if exists)
         run: docker rm -f sonarqube || true
 
+      - name: Check SonarQube Health
+        run: |
+          echo "Checking if SonarQube is accessible..."
+          until curl -s -o /dev/null -w "%{http_code}" http://localhost:9000 | grep 200; do 
+            echo "SonarQube is not ready yet. Retrying in 5 seconds..."
+            sleep 5
+          done
+          echo "SonarQube is ready!"  
+
       - name: Start SonarQube with Docker
         run: |
           docker run -d --name sonarqube -p 9000:9000 -e SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true sonarqube:lts
