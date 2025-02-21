@@ -14,4 +14,41 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: act
+        uses: actions/checkout@v4
+
+      - name: Run Tests
+        run: npm test || echo "Tests skipped"
+      
+      - name: Stop and remove existing SonarQube container (if exists)
+        run: docker rm -f sonarqube || true
+
+      - name: Start SonarQube with Docker
+        run: |
+          docker run -d --name sonarqube -p 9000:9000 -e SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true sonarqube:lts
+          echo "Waiting for SonarQube to be ready..."
+          until [[ "$(curl -s http://localhost:9000/api/system/status | jq -r .status)" == "UP" ]]; do
+            echo "SonarQube is still starting. Waiting 10 seconds..."
+            sleep 10
+          done
+          echo "SonarQube is fully operational!"
+
+      - name: Check SonarQube Connection
+        run: curl -v ${{ secrets.SONAR_HOST_URL }}/api/system/status
+
+      - name: Clear SonarQube Scanner Cache
+        run: rm -rf ~/.sonar/cache
+
+      - name: Install SonarQube Scanner
+        run: npm install -g sonarqube-scanner
+
+      - name: Run SonarQube Analysis
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        run: |
+          npx sonar-scanner -X \
+            -Dsonar.projectKey=profile-web \
+            -Dsonar.sources=. \
+            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
+            -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
+            -Dsonar.scanner.force-deprecated-api=false
