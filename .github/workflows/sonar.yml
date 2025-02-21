@@ -18,11 +18,6 @@ jobs:
 
       - name: Run Tests
         run: npm test || echo "Tests skipped"
-
-      - name: Check if SonarQube Scanner is installed
-        run: |
-          which sonarqube-scanner || echo "SonarQube Scanner not found"
-          ls -lah $(npm root -g) || echo "NPM global packages not found"
       
       - name: Stop and remove existing SonarQube container (if exists)
         run: docker rm -f sonarqube || true
@@ -31,23 +26,20 @@ jobs:
         run: |
           docker run -d --name sonarqube -p 9000:9000 -e SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true sonarqube:lts
           echo "Waiting for SonarQube to be ready..."
-          until curl -s -o /dev/null -w "%{http_code}" http://localhost:9000 | grep 200; do 
-            echo "Waiting..."
+          until curl -s -o /dev/null -w "%{http_code}" http://localhost:9000/api/system/status | grep 200; do
+            echo "SonarQube is not ready yet. Retrying in 5 seconds..."
             sleep 5
           done
           echo "SonarQube is ready!"
 
-      - name: Check SonarQube Health
-        run: curl -v http://localhost:9000
+      - name: Check SonarQube Connection
+        run: curl -v ${{ secrets.SONAR_HOST_URL }}/api/system/status
 
       - name: Clear SonarQube Scanner Cache
         run: rm -rf ~/.sonar/cache
 
       - name: Install SonarQube Scanner
         run: npm install -g sonarqube-scanner
-
-      - name: Set Java Memory Limit
-        run: echo "SONAR_SCANNER_OPTS=-Xmx512m" >> $GITHUB_ENV
 
       - name: Run SonarQube Analysis
         env:
@@ -58,4 +50,4 @@ jobs:
             -Dsonar.projectKey=profile-web \
             -Dsonar.sources=. \
             -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
-            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+            -Dsonar.token=${{ secrets.SONAR_TOKEN }}
