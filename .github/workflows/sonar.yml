@@ -9,25 +9,25 @@ on:
       - main
 
 jobs:
-  sonarqube:
+  sonarQubeScan:
+    name: SonarQube Scan
     runs-on: ubuntu-latest
 
     steps:
       - name: Debug Secrets
         run: |
-         if [[ -z "${{ secrets.SONAR_TOKEN }}" ]]; then
-          echo "❌ SONAR_TOKEN is not set in GitHub Secrets!"
-          exit 1
+          if [[ -z "${{ secrets.SONAR_TOKEN }}" ]]; then
+            echo "❌ SONAR_TOKEN is not set in GitHub Secrets!"
+            exit 1
           else
-          echo "✅ SONAR_TOKEN is set."
+            echo "✅ SONAR_TOKEN is set."
           fi
 
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Permet une analyse plus précise
 
-      - name: Run Tests
-        run: npm test || echo "Tests skipped"
-      
       - name: Stop and remove existing SonarQube container (if exists)
         run: docker rm -f sonarqube || true
 
@@ -51,13 +51,16 @@ jobs:
         run: npm install -g sonarqube-scanner
 
       - name: Run SonarQube Analysis
+        uses: SonarSource/sonarqube-scan-action@v4
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-        run: |
-          npx sonar-scanner -X \
-            -Dsonar.projectKey=profile-web \
-            -Dsonar.sources=. \
-            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
-            -Dsonar.token=${{ secrets.SONAR_TOKEN }}
-      
+        with:
+          projectBaseDir: . # Lancer l'analyse sur tout le projet
+
+      # Optionnel : Vérification du Quality Gate pour empêcher des builds si les standards ne sont pas respectés
+      - name: SonarQube Quality Gate Check
+        uses: SonarSource/sonarqube-quality-gate-action@v1
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
